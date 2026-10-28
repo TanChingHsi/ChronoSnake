@@ -15,7 +15,7 @@ the snake fast-forwards while burning one segment per rewind interval. Every\
 five segments burned during Redline also spawns a golden snitch, which can be\
 collected by any part of the snake while Redline is active. Outside Redline,\
 golden snitches can be collected by the front third of the snake. Each golden\
-snitch grants 15 length.\
+snitch grants 15 length.
 
 Hold **Space** to rewind time by shortening yourself. Rewinding removes\
 length. Every 15 length units rewound spawns a moving magenta Dead\
@@ -31,7 +31,7 @@ snake's current length.\
 Each white dot has a 7-second fuse. When it expires, the bomb removes at least\
 10 segments or half the snake's length (rounded up), whichever is greater. If\
 the snake is shorter than 10 when a bomb expires, the run ends immediately.\
-\
+
 ## Controls
 
 - **WASD** or **arrow keys**: move
