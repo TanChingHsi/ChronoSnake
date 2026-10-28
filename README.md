@@ -7,30 +7,30 @@ rewinding or letting a bomb fuse expire.
 
 ## How to play
 
-Guide the snake around the board, collect white dots to grow and earn points.\
+Guide the snake around the board, collect white dots to grow and earn points.
 
 
-Hold the left mouse button to use **Redline**:\
-the snake fast-forwards while burning one segment per rewind interval. Every\
-five segments burned during Redline also spawns a golden snitch, which can be\
-collected by any part of the snake while Redline is active. Outside Redline,\
-golden snitches can be collected by the front third of the snake. Each golden\
+Hold the left mouse button to use **Redline**:
+the snake fast-forwards while burning one segment per rewind interval. Every
+five segments burned during Redline also spawns a golden snitch, which can be
+collected by any part of the snake while Redline is active. Outside Redline,
+golden snitches can be collected by the front third of the snake. Each golden
 snitch grants 15 length.
 
-Hold **Space** to rewind time by shortening yourself. Rewinding removes\
-length. Every 15 length units rewound spawns a moving magenta Dead\
-Ringer cube that moves twice as fast as a golden snitch. Eating it\
-makes the snake's white segments blink magenta and white and grants a five-second death rewind.\
-Each additional Dead Ringer adds another five seconds to the rewind. If the\
-snake dies, its defies death and rewinds to the saved state of however many stored seconds prior to death.\
-\
-\
-Collect a white dot while it is flashing to trigger **Clutch**: a parry mechanic that doubles the
-snake's current length.\
+Hold **Space** to rewind time by shortening yourself. Rewinding removes
+length. Every 15 length units rewound spawns a moving magenta Dead
+Ringer cube that moves twice as fast as a golden snitch. Eating it
+makes the snake's white segments blink magenta and white and grants a five-second death rewind.
+Each additional Dead Ringer adds another five seconds to the rewind. If the
+snake dies, its defies death and rewinds to the saved state of however many stored seconds prior to death.
 
-Each white dot has a 7-second fuse. When it expires, the bomb removes at least\
-10 segments or half the snake's length (rounded up), whichever is greater. If\
-the snake is shorter than 10 when a bomb expires, the run ends immediately.\
+
+Collect a white dot while it is flashing to trigger **Clutch**: a parry mechanic that doubles the
+snake's current length.
+
+Each white dot has a 7-second fuse. When it expires, the bomb removes at least
+10 segments or half the snake's length (rounded up), whichever is greater. If
+the snake is shorter than 10 when a bomb expires, the run ends immediately.
 
 ## Controls
 
