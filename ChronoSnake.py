@@ -17,6 +17,9 @@ BOARD_WIDTH = BOARD_COLUMNS * CELL_SIZE
 BOARD_HEIGHT = BOARD_ROWS * CELL_SIZE
 MOVE_INTERVAL = 0.12
 REWIND_INTERVAL = MOVE_INTERVAL / 2
+GOLD_RADIUS = 9
+FOOD_FUSE_SECONDS = 7.0
+FOOD_BLINK_SECONDS = 3.0
 
 BACKGROUND = (5, 7, 12)
 BOARD_COLOR = (5, 7, 12)
@@ -25,6 +28,8 @@ MUTED_COLOR = (153, 162, 176)
 SNAKE_COLOR = (248, 249, 252)
 HEAD_COLOR = (255, 78, 93)
 REWIND_COLOR = (215, 220, 228)
+FOOD_COLOR = (245, 247, 250)
+GOLD_COLOR = (255, 205, 75)
 
 
 def display_color(color, rewinding):
@@ -75,7 +80,13 @@ class CronoSnake:
         self.direction_changed_since_step = False
         self.history = []
         self.score = 0
+        self.white_dots_eaten = 0
+        self.rewind_progress = 0
+        self.pending_gold = 0
+        self.gold = []
         self.food = self.spawn_food()
+        self.food_age = 0.0
+        self.food_timer = FOOD_FUSE_SECONDS
         self.game_over = False
         self.won = False
         self.accumulator = 0.0
@@ -87,6 +98,7 @@ class CronoSnake:
 
     def spawn_food(self):
         occupied = set(self.snake)
+        occupied.update(gold["cell"] for gold in self.gold)
         available = [
             (x, y)
             for x in range(BOARD_COLUMNS)
@@ -97,6 +109,32 @@ class CronoSnake:
             return None
         return random.choice(available)
 
+    def spawn_gold(self):
+        while self.pending_gold > 0:
+            occupied = set(self.snake)
+            if self.food is not None:
+                occupied.add(self.food)
+            occupied.update(gold["cell"] for gold in self.gold)
+            available = [
+                (x, y)
+                for x in range(BOARD_COLUMNS)
+                for y in range(BOARD_ROWS)
+                if (x, y) not in occupied
+            ]
+            if not available:
+                return
+
+            cell = random.choice(available)
+            angle = random.uniform(0, math.tau)
+            speed = random.uniform(150, 210)
+            self.gold.append({
+                "x": BOARD_LEFT + (cell[0] + 0.5) * CELL_SIZE,
+                "y": BOARD_TOP + (cell[1] + 0.5) * CELL_SIZE,
+                "vx": math.cos(angle) * speed,
+                "vy": math.sin(angle) * speed,
+                "cell": cell,
+            })
+            self.pending_gold -= 1
     def set_direction(self, direction):
         if (
             not self.direction_changed_since_step
@@ -105,6 +143,92 @@ class CronoSnake:
             self.direction = direction
             self.direction_changed_since_step = True
 
+    def update_gold(self, elapsed):
+        left = BOARD_LEFT + GOLD_RADIUS
+        right = BOARD_LEFT + BOARD_WIDTH - GOLD_RADIUS
+        top = BOARD_TOP + GOLD_RADIUS
+        bottom = BOARD_TOP + BOARD_HEIGHT - GOLD_RADIUS
+
+        self.spawn_gold()
+        for gold in self.gold:
+            gold["x"] += gold["vx"] * elapsed
+            gold["y"] += gold["vy"] * elapsed
+            if gold["x"] < left:
+                gold["x"] = left
+                gold["vx"] = abs(gold["vx"])
+            elif gold["x"] > right:
+                gold["x"] = right
+                gold["vx"] = -abs(gold["vx"])
+            if gold["y"] < top:
+                gold["y"] = top
+                gold["vy"] = abs(gold["vy"])
+            elif gold["y"] > bottom:
+                gold["y"] = bottom
+                gold["vy"] = -abs(gold["vy"])
+
+            gold["cell"] = (
+                int((gold["x"] - BOARD_LEFT) // CELL_SIZE),
+                int((gold["y"] - BOARD_TOP) // CELL_SIZE),
+            )
+        self.collect_touched_gold()
+
+    def gold_touches_red_segment(self, gold):
+        red_count = max(1, math.ceil(self.length / 3))
+        radius_squared = GOLD_RADIUS * GOLD_RADIUS
+        for cell_x, cell_y in self.snake[:red_count]:
+            left = BOARD_LEFT + cell_x * CELL_SIZE
+            top = BOARD_TOP + cell_y * CELL_SIZE
+            closest_x = min(max(gold["x"], left), left + CELL_SIZE)
+            closest_y = min(max(gold["y"], top), top + CELL_SIZE)
+            dx = gold["x"] - closest_x
+            dy = gold["y"] - closest_y
+            if dx * dx + dy * dy <= radius_squared:
+                return True
+        return False
+
+    def collect_gold(self, gold):
+        self.pending_growth += 15
+        self.score += 100
+        self.gold.remove(gold)
+
+    def collect_touched_gold(self):
+        for gold in self.gold[:]:
+            if self.gold_touches_red_segment(gold):
+                self.collect_gold(gold)
+        self.spawn_gold()
+
+    def update_food_timer(self, elapsed):
+        if self.food is None:
+            return
+
+        self.food_timer -= elapsed
+        self.food_age += elapsed
+        if self.food_timer > 0:
+            return
+
+        self.food = None
+        if self.length < 10:
+            self.snake = []
+            self.pending_growth = 0
+            self.game_over = True
+            return
+
+        length_loss = min(self.length, max(10, math.ceil(self.length / 2)))
+        pending_loss = min(length_loss, self.pending_growth)
+        self.pending_growth -= pending_loss
+        body_loss = length_loss - pending_loss
+        if body_loss:
+            self.snake = self.snake[:-body_loss] if body_loss < len(self.snake) else []
+        if self.length == 0:
+            self.game_over = True
+            return
+
+        self.food = self.spawn_food()
+        self.food_age = 0.0
+        self.food_timer = FOOD_FUSE_SECONDS
+        if self.food is None:
+            self.won = True
+            self.game_over = True
     def forward_step(self):
         head_x, head_y = self.snake[0]
         dx, dy = self.direction
@@ -113,9 +237,9 @@ class CronoSnake:
             self.game_over = True
             return
 
-        eating_food = new_head == self.food
+        eating_white = new_head == self.food
         tail_will_move = self.pending_growth == 0
-        body_to_check = self.snake[1:-1] if tail_will_move and not eating_food else self.snake[1:]
+        body_to_check = self.snake[1:-1] if tail_will_move and not eating_white else self.snake[1:]
         if new_head in body_to_check:
             self.game_over = True
             return
@@ -128,13 +252,25 @@ class CronoSnake:
             self.snake.pop()
         self.direction_changed_since_step = False
 
-        if eating_food:
+        if eating_white:
             self.pending_growth += 2
             self.score += 10
+            self.white_dots_eaten += 1
             self.food = self.spawn_food()
+            self.food_age = 0.0
+            self.food_timer = FOOD_FUSE_SECONDS
             if self.food is None:
                 self.won = True
                 self.game_over = True
+        self.spawn_gold()
+        self.collect_touched_gold()
+
+    def record_rewound_length(self):
+        self.rewind_progress += 1
+        if self.rewind_progress == 5:
+            self.rewind_progress = 0
+            self.pending_gold += 1
+            self.spawn_gold()
 
     def rewind_step(self):
         if not self.history:
@@ -145,6 +281,7 @@ class CronoSnake:
             self.snake = []
             self.pending_growth = 0
             self.game_over = True
+            self.record_rewound_length()
             return
 
         current_head = self.snake[0]
@@ -157,6 +294,7 @@ class CronoSnake:
         if reverse_direction != (0, 0):
             self.direction = reverse_direction
         self.score = max(0, self.score - (target_length + 1))
+        self.record_rewound_length()
 
     def draw_text(self, text, position, color, font=None, centered=False, rewinding=False):
         font = font or self.font
@@ -174,6 +312,12 @@ class CronoSnake:
         self.draw_text("[ CRONOSNAKE ]", (BOARD_LEFT, 26), TEXT_COLOR, self.title_font, rewinding=rewinding)
         self.draw_text(f"SCORE: {self.score:06d}", (BOARD_LEFT, 70), TEXT_COLOR, rewinding=rewinding)
         self.draw_text(f"LEN: {self.length:03d}", (280, 73), MUTED_COLOR, rewinding=rewinding)
+        self.draw_text(
+            f"GOLD: {5 - self.rewind_progress}",
+            (460, 73),
+            MUTED_COLOR,
+            rewinding=rewinding,
+        )
         self.draw_text("[SPACE] REWIND", (SCREEN_WIDTH - 225, 73), REWIND_COLOR, rewinding=rewinding)
 
         board_rect = pygame.Rect(BOARD_LEFT, BOARD_TOP, BOARD_WIDTH, BOARD_HEIGHT)
@@ -187,7 +331,21 @@ class CronoSnake:
                 CELL_SIZE,
                 CELL_SIZE,
             )
-            pygame.draw.rect(self.screen, color(SNAKE_COLOR), food_cube)
+            food_color = SNAKE_COLOR
+            if self.food_timer <= FOOD_BLINK_SECONDS:
+                blink_phase = 1.5 * self.food_age + 1.4 * self.food_age * self.food_age
+                if math.sin(math.tau * blink_phase) > 0:
+                    food_color = HEAD_COLOR
+            pygame.draw.rect(self.screen, color(food_color), food_cube)
+
+        for gold in self.gold:
+            gold_cube = pygame.Rect(
+                round(gold["x"] - CELL_SIZE / 2),
+                round(gold["y"] - CELL_SIZE / 2),
+                CELL_SIZE,
+                CELL_SIZE,
+            )
+            pygame.draw.rect(self.screen, color(GOLD_COLOR), gold_cube)
 
         red_count = max(1, math.ceil(self.length / 3))
         for index, (cell_x, cell_y) in enumerate(self.snake):
@@ -200,6 +358,22 @@ class CronoSnake:
             segment_color = HEAD_COLOR if index < red_count else SNAKE_COLOR
             pygame.draw.rect(self.screen, color(segment_color), segment)
 
+        if self.gold:
+            self.draw_text(
+                f"GOLD x{len(self.gold)}: +15 LEN",
+                (BOARD_LEFT, BOARD_TOP + BOARD_HEIGHT + 12),
+                GOLD_COLOR,
+                self.small_font,
+                rewinding=rewinding,
+            )
+        else:
+            self.draw_text(
+                f"GOLD QUEUED: {self.pending_gold}",
+                (BOARD_LEFT, BOARD_TOP + BOARD_HEIGHT + 12),
+                MUTED_COLOR,
+                self.small_font,
+                rewinding=rewinding,
+            )
         self.draw_text(
             "[WASD] MOVE",
             (BOARD_LEFT + 300, BOARD_TOP + BOARD_HEIGHT + 12),
@@ -345,6 +519,9 @@ class CronoSnake:
                         self.forward_step()
                         if self.game_over:
                             break
+                if not self.game_over:
+                    self.update_food_timer(elapsed)
+                    self.update_gold(elapsed)
             self.draw(rewinding)
 
         pygame.quit()
