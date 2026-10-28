@@ -45,9 +45,8 @@ inputs from reversing the snake into its body.
 
 ## Run
 
-Requires Python and Pygame. From the project directory:
-
 ```powershell
+python -m pip install pygame
 python ChronoSnake.py
 ```
 
