@@ -58,3 +58,13 @@ python ChronoSnake.py
 - Rewind audio depends on the system's audio device. If audio cannot be
   initialized, the game reports this and continues with visual rewind cues.
 - Movement is grid-based, and only one turn can be made per movement step.
+
+## Demo
+
+
+
+https://github.com/user-attachments/assets/faf03678-1c08-4aa3-b433-c70ce70d839c
+
+
+
+
