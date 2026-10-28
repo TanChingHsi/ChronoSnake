@@ -26,7 +26,7 @@ On a side note (didnt implament this literally) buddys joked that I gotta includ
 
 ## Tools and credits
 
-I used GitHub Copilot (I believe it auto-routed to GPT-6?) to help implement game features and overhaul the art style. The game began from a tutorial I had followed out of boredom in college. Final iterations of documentations in PROCESS and README are manually typed.
+I used GitHub Copilot (I believe it auto-routed to GPT-6?) to help implement game features and overhaul the art style. The game began from a tutorial I had followed out of boredom in college. Final iterations of documentations in PROCESS and README are manually typed. I also manually reviewed and debugged the code in the early stages and edited a teensy bit of style/flavor stuff near the end.
 
 Specifically the tutorial I followed was Kenny Yip Coding's baseline project:
 [Kenny Yip Coding — YouTube](https://www.youtube.com/watch?v=FtqWCo1_I4g).

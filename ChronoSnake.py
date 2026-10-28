@@ -783,7 +783,7 @@ class CronoSnake:
                 subtitle = "FILLED THE BOARD. PRESS [R] TO RESTART."
             elif self.length == 0:
                 title = "[ LOST TO TIME ]"
-                subtitle = "REWIND ERASED THE LAST SEGMENT. PRESS [R]."
+                subtitle = "YOU ERASED THE LAST SEGMENT. PRESS [R]."
             else:
                 title = "[ GAME OVER ]"
                 subtitle = "PRESS [R] RESTART  /  [ESC] QUIT"
