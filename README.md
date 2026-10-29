@@ -45,10 +45,34 @@ inputs from reversing the snake into its body.
 
 ## Run
 
+### Using Python
+
+Install Pygame and run the game with the same Python interpreter. On Windows,
+the Python launcher can select Python 3.13 explicitly:
+
 ```powershell
-python -m pip install pygame
-python ChronoSnake.py
+py -3.13 -m pip install pygame
+py -3.13 .\ChronoSnake.py
 ```
+
+### Alternative: using uv on Windows
+
+If you have Python but not `uv`, install `uv` from PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Open a new PowerShell window, navigate to the ChronoSnake project folder, and
+run:
+
+```powershell
+uv run --python 3.13 --with pygame==2.6.1 .\ChronoSnake.py
+```
+
+`uv` can download Python 3.13 if needed and installs the pinned Pygame version
+in its managed environment. This requires an internet connection and a desktop
+environment to open the game window.
 
 ## Known limitations
 
@@ -63,7 +87,6 @@ python ChronoSnake.py
 
 
 https://github.com/user-attachments/assets/faf03678-1c08-4aa3-b433-c70ce70d839c
-
 
 
 
