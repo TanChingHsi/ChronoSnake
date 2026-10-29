@@ -7,7 +7,8 @@ rewinding or letting a bomb fuse expire.
 
 ## How to play
 
-Guide the snake around the board, collect white dots to grow and earn points.
+Guide the snake around the board and collect white dots to grow. Track your
+survival time and snake length as measures of progress.
 
 
 Hold the left mouse button to use **Redline**:
@@ -87,6 +88,5 @@ environment to open the game window.
 
 
 https://github.com/user-attachments/assets/faf03678-1c08-4aa3-b433-c70ce70d839c
-
 
 

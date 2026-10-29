@@ -128,7 +128,6 @@ class CronoSnake:
         self.direction = (1, 0)
         self.direction_changed_since_step = False
         self.history = RewindHistory()
-        self.score = 0
         self.white_dots_eaten = 0
         self.dead_ringer_progress = 0
         self.chase_progress = 0
@@ -144,6 +143,7 @@ class CronoSnake:
         self.won = False
         self.accumulator = 0.0
         self.rewind_sound_timer = 0.0
+        self.elapsed_time = 0.0
         self.run_time = 0.0
         self.detonation_flash_timer = 0.0
         self.damage_flash_timer = 0.0
@@ -231,7 +231,6 @@ class CronoSnake:
             "direction": self.direction,
             "direction_changed_since_step": self.direction_changed_since_step,
             "history": self.history.copy(),
-            "score": self.score,
             "white_dots_eaten": self.white_dots_eaten,
             "dead_ringer_progress": self.dead_ringer_progress,
             "chase_progress": self.chase_progress,
@@ -298,7 +297,6 @@ class CronoSnake:
         state = states[state_index]
         self.snake = list(state["snake"])
         self.pending_growth = state["pending_growth"]
-        self.score = state["score"]
         if animation["elapsed"] >= animation["duration"]:
             self.restore_dead_ringer(animation["target_time"], animation["target_state"])
             self.dead_ringer_animation = None
@@ -309,7 +307,6 @@ class CronoSnake:
         self.direction = state["direction"]
         self.direction_changed_since_step = state["direction_changed_since_step"]
         self.history = state["history"].copy()
-        self.score = state["score"]
         self.white_dots_eaten = state["white_dots_eaten"]
         self.dead_ringer_progress = state["dead_ringer_progress"]
         self.chase_progress = state["chase_progress"]
@@ -429,7 +426,6 @@ class CronoSnake:
 
     def collect_gold(self, gold):
         self.pending_growth += 15
-        self.score += 100
         self.gold.remove(gold)
 
     def collect_touched_gold(self, chasing=False):
@@ -506,7 +502,6 @@ class CronoSnake:
                 self.screen_shake_timer = max(self.screen_shake_timer, CLUTCH_EFFECT_SECONDS)
             else:
                 self.pending_growth += 2
-            self.score += 10
             self.white_dots_eaten += 1
             self.food = self.spawn_food()
             self.food_age = 0.0
@@ -548,7 +543,6 @@ class CronoSnake:
             return
         self.direction_changed_since_step = False
         if self.length <= 1:
-            self.score = max(0, self.score - self.length)
             self.snake = []
             self.pending_growth = 0
             self.game_over = True
@@ -564,7 +558,6 @@ class CronoSnake:
         reverse_direction = (current_head[0] - previous_head[0], current_head[1] - previous_head[1])
         if reverse_direction != (0, 0):
             self.direction = reverse_direction
-        self.score = max(0, self.score - (target_length + 1))
         self.record_rewound_length()
 
     def draw_text(self, text, position, color, font=None, centered=False, rewinding=False, chasing=False):
@@ -580,9 +573,17 @@ class CronoSnake:
 
     def draw(self, rewinding, chasing=False):
         color = lambda base: display_color(base, rewinding)
+        elapsed_minutes = int(self.elapsed_time // 60)
+        elapsed_seconds = int(self.elapsed_time % 60)
         self.screen.fill((139, 0, 0) if chasing else color(BACKGROUND))
         self.draw_text("[ CRONOSNAKE ]", (BOARD_LEFT, 26), TEXT_COLOR, self.title_font, rewinding=rewinding, chasing=chasing)
-        self.draw_text(f"SCORE: {self.score:06d}", (BOARD_LEFT, 70), TEXT_COLOR, rewinding=rewinding, chasing=chasing)
+        self.draw_text(
+            f"TIME: {elapsed_minutes:02d}:{elapsed_seconds:02d}",
+            (BOARD_LEFT, 70),
+            TEXT_COLOR,
+            rewinding=rewinding,
+            chasing=chasing,
+        )
         self.draw_text(f"LEN: {self.length:03d}", (280, 73), MUTED_COLOR, rewinding=rewinding, chasing=chasing)
         dead_ringer_status = (
             f"DR: {self.dead_ringer_rewind_seconds:.0f}S"
@@ -789,8 +790,6 @@ class CronoSnake:
                 subtitle = "PRESS [R] RESTART  /  [ESC] QUIT"
             self.draw_text(title, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 28), TEXT_COLOR, self.title_font, True)
             self.draw_text(subtitle, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 18), MUTED_COLOR, self.font, True)
-            elapsed_minutes = int(self.run_time // 60)
-            elapsed_seconds = int(self.run_time % 60)
             self.draw_text(
                 f"LEN: {self.length:03d}  TIME: {elapsed_minutes:02d}:{elapsed_seconds:02d}",
                 (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 62),
@@ -905,6 +904,8 @@ class CronoSnake:
                 and not rewinding
                 and self.dead_ringer_animation is None
             )
+            if not self.game_over:
+                self.elapsed_time += elapsed
             if self.dead_ringer_animation is not None:
                 self.update_dead_ringer_rewind(elapsed)
             elif not self.game_over and not hitstopped:
